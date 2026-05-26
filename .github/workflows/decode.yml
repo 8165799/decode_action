@@ -11,7 +11,12 @@ jobs:
       contents: write
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
     - name: Execute Python script for decoding
       run: |
@@ -19,8 +24,8 @@ jobs:
 
     - name: Install dependencies and run decode
       run: |
-        npm install
-        npm run decode -- [-i input.js] [-o output.js]
+        npm install --no-audit --no-fund
+        npm run decode -- -i input.js -o output.js
     - name: Configure Git author
       run: |
         git config --local user.email "action@github.com"
@@ -31,6 +36,10 @@ jobs:
         ls
         git add output.js
         git add output.py
+        if git diff --cached --quiet; then
+          echo "No decoded output changes to commit."
+          exit 0
+        fi
         git commit -m "Add decoded output file"
         git push
         

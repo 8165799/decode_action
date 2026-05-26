@@ -3,23 +3,16 @@ import { fileURLToPath } from 'url';
 import * as path from 'path';
 import process from 'process';
 
-// Dynamically import ESM modules
-const commonModule = await import('./plugin/common.js');
-const jjencodeModule = await import('./plugin/jjencode.js');
-const sojsonModule = await import('./plugin/sojson.js');
-const sojsonv7Module = await import('./plugin/sojsonv7.js');
-const obfuscatorModule = await import('./plugin/obfuscator.js');
-const awscModule = await import('./plugin/awsc.js');
-const jsconfuserModule = await import('./plugin/jsconfuser.js');
+async function loadPlugin(name, modulePath) {
+  try {
+    const module = await import(modulePath);
+    return module.default || module;
+  } catch (error) {
+    console.error(`插件 ${name} 加载失败: ${error.message}`);
+    return null;
+  }
+}
 
-// Provide default exports if necessary
-const PluginCommon = commonModule.default || commonModule;
-const PluginJjencode = jjencodeModule.default || jjencodeModule;
-const PluginSojson = sojsonModule.default || sojsonModule;
-const PluginSojsonV7 = sojsonv7Module.default || sojsonv7Module;
-const PluginObfuscator = obfuscatorModule.default || obfuscatorModule;
-const PluginAwsc = awscModule.default || awscModule;
-const PluginJsconfuser = jsconfuserModule.default || jsconfuserModule;
 // Read command-line arguments
 let encodeFile = 'input.js';
 let decodeFile = 'output.js';
@@ -44,14 +37,14 @@ let time;
 
 // Try plugins in sequence until the processed code differs from the original
 const plugins = [
-  { name: 'obfuscator', plugin: PluginObfuscator },
-  { name: 'sojsonv7', plugin: PluginSojsonV7 },
-    { name: 'sojson', plugin: PluginSojson },
-
-  { name: 'jsconfuser', plugin: PluginJsconfuser },
-  { name: 'awsc', plugin: PluginAwsc },
-  { name: 'jjencode', plugin: PluginJjencode },
-  { name: 'common', plugin: PluginCommon }, // Use common plugin last
+  { name: 'string-array', modulePath: './plugin/string-array.js' },
+  { name: 'obfuscator', modulePath: './plugin/obfuscator.js' },
+  { name: 'sojsonv7', modulePath: './plugin/sojsonv7.js' },
+  { name: 'sojson', modulePath: './plugin/sojson.js' },
+  { name: 'jsconfuser', modulePath: './plugin/jsconfuser.js' },
+  { name: 'awsc', modulePath: './plugin/awsc.js' },
+  { name: 'jjencode', modulePath: './plugin/jjencode.js' },
+  { name: 'common', modulePath: './plugin/common.js' }, // Use common plugin last
 ];
 
 for (const plugin of plugins) {
@@ -61,7 +54,11 @@ for (const plugin of plugins) {
   }
 
   try {
-    const code = plugin.plugin(sourceCode);
+    const pluginFn = await loadPlugin(plugin.name, plugin.modulePath);
+    if (!pluginFn) {
+      continue;
+    }
+    const code = pluginFn(sourceCode);
     if (code && code !== processedCode) {
       processedCode = code;
       pluginUsed = plugin.name;
