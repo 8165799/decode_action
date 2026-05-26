@@ -30,12 +30,6 @@ function collectAliases(code, decoderNames) {
   return aliases
 }
 
-function countParams(fnSource) {
-  const match = fnSource.match(/^function\s+[A-Za-z_$][\w$]*\s*\(([^)]*)\)/)
-  if (!match) return 0
-  return match[1].split(',').map((v) => v.trim()).filter(Boolean).length
-}
-
 function findDecoderNames(code) {
   const names = []
   const fnRe = /function\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{\s*var\s+\w+\s*=\s*a0c\s*\(\)/g
@@ -56,31 +50,28 @@ function replaceCalls(code, decoders, aliases) {
   for (const name of aliasNames) {
     const decoderName = aliases.get(name)
     const fn = decoders[decoderName]
-    const argc = fn.length || countParams(fn.toString())
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-    if (argc >= 2) {
-      const re = new RegExp(
-        `\\b${escaped}\\(\\s*(0x[0-9a-fA-F]+|\\d+)\\s*,\\s*(['"])((?:\\\\.|(?!\\2).)*?)\\2\\s*\\)`,
-        'g',
-      )
-      out = out.replace(re, (full, idx, quote, key) => {
-        try {
-          return jsString(fn(Number(idx), decodeLiteral(quote, key)))
-        } catch {
-          return full
-        }
-      })
-    } else {
-      const re = new RegExp(`\\b${escaped}\\(\\s*(0x[0-9a-fA-F]+|\\d+)\\s*\\)`, 'g')
-      out = out.replace(re, (full, idx) => {
-        try {
-          return jsString(fn(Number(idx)))
-        } catch {
-          return full
-        }
-      })
-    }
+    const keyedRe = new RegExp(
+      `\\b${escaped}\\(\\s*(0x[0-9a-fA-F]+|\\d+)\\s*,\\s*(['"])((?:\\\\.|(?!\\2).)*?)\\2\\s*\\)`,
+      'g',
+    )
+    out = out.replace(keyedRe, (full, idx, quote, key) => {
+      try {
+        return jsString(fn(Number(idx), decodeLiteral(quote, key)))
+      } catch {
+        return full
+      }
+    })
+
+    const singleArgRe = new RegExp(`\\b${escaped}\\(\\s*(0x[0-9a-fA-F]+|\\d+)\\s*\\)`, 'g')
+    out = out.replace(singleArgRe, (full, idx) => {
+      try {
+        return jsString(fn(Number(idx)))
+      } catch {
+        return full
+      }
+    })
   }
 
   return out
