@@ -1,5 +1,5 @@
 /**
- * cron "7 7 7 7 7" SendSms.js
+ * cron "7 7 7 7 7" SendSms.js1
  * export Common_Phone="手机号"
  * export Common_Type=""//XiShiYan,WangChao,XinJiangBei,TongLu,ZSWY,SHPJ,YueCheng,DaChao,RongPanAn,LanJingLing,AiHaiYan,QingJiao,JingZhou
  * export OCR_SERVER="ocr服务"
