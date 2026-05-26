@@ -1,6 +1,6 @@
 /**
  * cron "10 1,12 * * *" XinJiangBei.js
- * export XinJiangBei="账号1&密码1&支付宝姓名1&支付宝账号1 账号2&密码2&支付宝姓名2&支付宝账号2"
+ * export XinJiangBei="账号1&密码1&支付宝姓名1&支付宝账号1 账号2&密码2&支付宝姓名2&支付宝账号222"
  * export GHPROXYURL="https://ghfast.top"
  */
 const $ = new Env('新江北')
